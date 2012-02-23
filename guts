@@ -211,15 +211,15 @@ def has_local_changes(argv):
     files = calc_working_tree()
 
     for n, wtfilename in enumerate(files):
-        f = files[fname]
+        f = files[wtfilename]
 
         if (
             (f.mode == "000000" and os.path.exists(f.filename)) or
-            (not os.path.exists(f.filename)) or
-            (f.object != hashlib.sha1(file(f.filename).read()).hexdigest()) or
-            (os.stat(f.filename)[0] != int(f.mode, 8))
+            (f.mode != "000000" and not os.path.exists(f.filename)) or
+            (f.mode != "000000" and f.object != hashlib.sha1(file(f.filename).read()).hexdigest()) or
+            (f.mode != "000000" and os.stat(f.filename)[0] != int(f.mode, 8))
         ):
-            print "true"
+            print "true ("+f.filename+")"
             return 0
 
     print "false"
