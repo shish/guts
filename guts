@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# overall TODO:
+# add file-modified-times to the history file, if FMTs
+# match, don't bother hashing the whole file
+
 import os
 import sys
 import argparse
@@ -61,7 +65,9 @@ def calc_working_tree():
             if ch.type == "add":
                 files[ch.filename] = File(ch.filename, ch.mode, ch.object)
             if ch.type == "modify":
-                files[ch.filename] = File(ch.filename, ch.mode, ch.object)
+                files[ch.filename].old_objects.append(files[ch.filename].object)
+                files[ch.filename].mode = ch.mode
+                files[ch.filename].object = ch.object
             if ch.type == "delete":
                 files[ch.filename] = File(ch.filename, "000000", "0" * 40)
     return files
@@ -142,6 +148,7 @@ class File(object):
         self.filename = filename
         self.mode = mode
         self.object = object
+        self.old_objects = []
 
 
 #######################################################################
@@ -187,26 +194,20 @@ def has_remote_changes(argv):
         return 1
 
 
-# TODO: file mode
 def has_local_changes(argv):
     files = calc_working_tree()
 
     for n, wtfilename in enumerate(files):
-        wtfile = files[wtfilename]
+        f = files[fname]
 
-        if wtfile.mode == "000000":
-            if os.path.exists(wtfile.filename):
-                print "true"
-                return 0
-        else:
-            if not os.path.exists(wtfile.filename):
-                print "true"
-                return 0
-            elif wtfile.object != hashlib.sha1(file(wtfile.filename).read()).hexdigest():
-                print "true"
-                return 0
-
-            # FIXME: check file mode
+        if (
+            (f.mode == "000000" and os.path.exists(f.filename)) or
+            (not os.path.exists(f.filename)) or
+            (f.object != hashlib.sha1(file(f.filename).read()).hexdigest()) or
+            (os.stat(f.filename)[0] != int(f.mode, 8))
+        ):
+            print "true"
+            return 0
 
     print "false"
     return 1
@@ -217,6 +218,9 @@ def has_local_changes(argv):
 def sync_up(argv):
     remote_url = url_to_scp(argv[0])
 
+    known_files = calc_working_tree()
+    actual_files = {}
+
     if True:
         print "true"
         return 0
@@ -225,10 +229,9 @@ def sync_up(argv):
         return 1
 
 
-# TODO: fetch
-# TODO: rebase
 def sync_down(argv):
     remote_url = url_to_scp(argv[0])
+    conflicts = False
 
     print "Downloading history"
     scp(remote_url, "history", ".gut/history")
@@ -245,18 +248,20 @@ def sync_down(argv):
             if os.path.exists(wtfile.filename):
                 os.unlink(wtfile.filename)
         else:
-            need_sync = False
-            if not os.path.exists(wtfile.filename):
-                need_sync = True
-            elif wtfile.object != hashlib.sha1(file(wtfile.filename).read()).hexdigest():
-                need_sync = True
-            if need_sync:
-                scp(remote_url, "objects/%s" % wtfile.object, wtfile.filename)
+            current_hash = None
+            if os.path.exists(wtfile.filename):
+                current_hash = hashlib.sha1(file(wtfile.filename).read()).hexdigest()
 
-            # TODO: check file mode first
-            os.chmod(wtfile.filename, int(wtfile.mode, 8))
+            if wtfile.object != current_hash:
+                if current_hash and current_hash not in wtfile.old_objects:
+                    conflicts = True
+                    os.rename(wtfile.filename, wtfile.filename+"."+str(time.time()))
+                scp(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
 
-    if True:
+            if os.stat(wtfile.filename)[0] != int(wtfile.mode, 8):
+                os.chmod(wtfile.filename, int(wtfile.mode, 8))
+
+    if not conflicts:
         print "true"
         return 0
     else:
@@ -272,8 +277,6 @@ def fetch(argv):
         os.mkdir(target_folder)
     if not os.path.exists(target_folder + "/.gut"):
         os.mkdir(target_folder + "/.gut")
-    if not os.path.exists(target_folder + "/.gut/objects"):
-        os.mkdir(target_folder + "/.gut/objects")
 
     scp(remote_url, "repo_id", target_folder+"/.gut/repo_id")
     file(target_folder+"/.gut/history", "w").write("")
