@@ -53,22 +53,27 @@ def read_history(filename):
 
     return commits
 
+
 def calc_working_tree():
     files = {}
     for commit in read_history(".gut/history"):
-        for change in commit.changes:
-            if change.type == "add":
-                files[change.filename] = File(change.filename, change.mode, change.object)
-            if change.type == "modify":
-                files[change.filename] = File(change.filename, change.mode, change.object)
-            if change.type == "delete":
-                files[change.filename] = File(change.filename, "000000", "0"*40)
+        for ch in commit.chs:
+            if ch.type == "add":
+                files[ch.filename] = File(ch.filename, ch.mode, ch.object)
+            if ch.type == "modify":
+                files[ch.filename] = File(ch.filename, ch.mode, ch.object)
+            if ch.type == "delete":
+                files[ch.filename] = File(ch.filename, "000000", "0" * 40)
     return files
+
 
 def scp(remote_url, remote_path, local_path):
     #print "scp -q "+remote_url+"/"+remote_path+" "+local_path
-    os.system("scp -q "+remote_url+"/"+remote_path+" "+local_path)
+    os.system('scp -q "%s/%s" "%s"' % (remote_url, remote_path, local_path))
 
+
+#######################################################################
+# objects
 
 class Commit(object):
     def __init__(self):
@@ -80,19 +85,21 @@ class Commit(object):
 
     def __str__(self):
         s = ""
-        s = s + "commit "+self.hash+"\n"
-        s = s + "Author: "+self.author+"\n"
-        s = s + "Date:   "+self.date+"\n"
+        s = s + "commit %s\n" % self.hash
+        s = s + "Author: %s\n" % self.author
+        s = s + "Date:   %s\n" % self.date
         s = s + "\n"
-        s = s + "    "+self.msg+"\n"
+        s = s + "    %s\n" % self.msg
         s = s + "\n"
         for change in self.changes:
             s = s + str(change) + "\n"
         return s
 
+
 class Change(object):
     def __init__(self):
         pass
+
 
 class Add(Change):
     def __init__(self, line):
@@ -100,10 +107,11 @@ class Add(Change):
 
     def __str__(self):
         return ":%s %s %s %s %s  %s" % (
-            "000000", self.mode, "0000000...", self.object[0:7]+"...",
+            "000000", self.mode, "0000000...", self.object[0:7] + "...",
             self.type[0].upper(),
             self.filename
         )
+
 
 class Modify(Change):
     def __init__(self, line):
@@ -111,10 +119,11 @@ class Modify(Change):
 
     def __str__(self):
         return ":%s %s %s %s %s  %s" % (
-            self.mode, self.mode, self.object[0:7]+"...", self.object[0:7]+"...",
+            self.mode, self.mode, self.object[0:7] + "...", self.object[0:7] + "...",
             self.type[0].upper(),
             self.filename
         )
+
 
 class Delete(Change):
     def __init__(self, line):
@@ -126,6 +135,7 @@ class Delete(Change):
             self.type[0].upper(),
             self.filename
         )
+
 
 class File(object):
     def __init__(self, filename, mode, object):
@@ -227,7 +237,7 @@ def sync_down(argv):
     files = calc_working_tree()
 
     for n, wtfilename in enumerate(files):
-        print >>sys.stderr, "%d%%" % int(n*100/len(files))
+        print >>sys.stderr, "%d%%" % int(n * 100 / len(files))
         print wtfilename
         wtfile = files[wtfilename]
 
@@ -241,7 +251,7 @@ def sync_down(argv):
             elif wtfile.object != hashlib.sha1(file(wtfile.filename).read()).hexdigest():
                 need_sync = True
             if need_sync:
-                scp(remote_url, "objects/"+wtfile.object, wtfile.filename)
+                scp(remote_url, "objects/%s" % wtfile.object, wtfile.filename)
 
             # TODO: check file mode first
             os.chmod(wtfile.filename, int(wtfile.mode, 8))
