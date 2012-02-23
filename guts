@@ -1,0 +1,342 @@
+#!/usr/bin/python
+
+import os
+import sys
+import argparse
+import hashlib
+import random
+import time
+
+
+def random_hash():
+    base = time.time()
+    base = base + random.randint(0, sys.maxint)
+    return hashlib.sha1(str(base)).hexdigest()
+
+
+def url_to_scp(url):
+    url = url.replace("ssh://", "")
+    url = url.replace(".org", ".org:")
+    return url
+
+
+def read_history(filename):
+    lines = file(filename).readlines()
+
+    commits = []
+    commit = None
+    for line in lines:
+        if line.strip() == "":
+            continue
+        k, v = line.strip().split(":", 1)
+        if k == "commit":
+            if commit:
+                commits.append(commit)
+            commit = Commit()
+            commit.hash = v
+            commit.msg = "waffo"
+            commit.changes = []
+        if not commit:
+            continue
+        if k == "author":
+            commit.author = v
+        if k == "date":
+            commit.date = v
+        if k == "add":
+            commit.changes.append(Add(line.strip()))
+        if k == "modify":
+            commit.changes.append(Modify(line.strip()))
+        if k == "delete":
+            commit.changes.append(Delete(line.strip()))
+    if commit:
+        commits.append(commit)
+
+    return commits
+
+def calc_working_tree():
+    files = {}
+    for commit in read_history(".gut/history"):
+        for change in commit.changes:
+            if change.type == "add":
+                files[change.filename] = File(change.filename, change.mode, change.object)
+            if change.type == "modify":
+                files[change.filename] = File(change.filename, change.mode, change.object)
+            if change.type == "delete":
+                files[change.filename] = File(change.filename, "000000", "0"*40)
+    return files
+
+def scp(remote_url, remote_path, local_path):
+    #print "scp -q "+remote_url+"/"+remote_path+" "+local_path
+    os.system("scp -q "+remote_url+"/"+remote_path+" "+local_path)
+
+
+class Commit(object):
+    def __init__(self):
+        self.author = "auth <moo>"
+        self.date = "moo"
+        self.msg = "1234"
+        self.hash = "1234"
+        self.changes = []
+
+    def __str__(self):
+        s = ""
+        s = s + "commit "+self.hash+"\n"
+        s = s + "Author: "+self.author+"\n"
+        s = s + "Date:   "+self.date+"\n"
+        s = s + "\n"
+        s = s + "    "+self.msg+"\n"
+        s = s + "\n"
+        for change in self.changes:
+            s = s + str(change) + "\n"
+        return s
+
+class Change(object):
+    def __init__(self):
+        pass
+
+class Add(Change):
+    def __init__(self, line):
+        self.type, self.filename, self.mode, self.object = line.split(":")
+
+    def __str__(self):
+        return ":%s %s %s %s %s  %s" % (
+            "000000", self.mode, "0000000...", self.object[0:7]+"...",
+            self.type[0].upper(),
+            self.filename
+        )
+
+class Modify(Change):
+    def __init__(self, line):
+        self.type, self.filename, self.mode, self.object = line.split(":")
+
+    def __str__(self):
+        return ":%s %s %s %s %s  %s" % (
+            self.mode, self.mode, self.object[0:7]+"...", self.object[0:7]+"...",
+            self.type[0].upper(),
+            self.filename
+        )
+
+class Delete(Change):
+    def __init__(self, line):
+        self.type, self.filename = line.split(":")
+
+    def __str__(self):
+        return ":%s %s %s %s %s  %s" % (
+            "100644", "000000", "1234567...", "0000000...",
+            self.type[0].upper(),
+            self.filename
+        )
+
+class File(object):
+    def __init__(self, filename, mode, object):
+        self.filename = filename
+        self.mode = mode
+        self.object = object
+
+
+#######################################################################
+# commands
+
+def identifier(argv):
+    print file(".gut/repo_id").read()
+
+
+def size(argv):
+    os.system("du -cb ./ | grep total | cut -f 1")
+
+
+def history_size(argv):
+    os.system("du -cb ./.gut/ | grep total | cut -f 1")
+
+
+# TODO list local mods (A, M, ? in git status terms)
+# is this used?
+def unsynced_file_paths(argv):
+    pass
+
+
+def current_revision(argv):
+    print hashlib.sha1(
+        file(".gut/history").read() +
+        file(".gut/local_history").read()
+    ).hexdigest()
+
+
+def has_remote_changes(argv):
+    remote_url = url_to_scp(argv[0])
+    scp(remote_url, "history", ".gut/tmp-remote-history")
+
+    local = hashlib.sha1(file(".gut/history").read()).hexdigest()
+    remote = hashlib.sha1(file(".gut/tmp-remote-history").read()).hexdigest()
+
+    if local != remote:
+        print "true"
+        return 0
+    else:
+        print "false"
+        return 1
+
+
+# TODO: file mode
+def has_local_changes(argv):
+    files = calc_working_tree()
+
+    for n, wtfilename in enumerate(files):
+        wtfile = files[wtfilename]
+
+        if wtfile.mode == "000000":
+            if os.path.exists(wtfile.filename):
+                print "true"
+                return 0
+        else:
+            if not os.path.exists(wtfile.filename):
+                print "true"
+                return 0
+            elif wtfile.object != hashlib.sha1(file(wtfile.filename).read()).hexdigest():
+                print "true"
+                return 0
+
+            # FIXME: check file mode
+
+    print "false"
+    return 1
+
+
+# TODO: add & commit
+# TODO: push
+def sync_up(argv):
+    remote_url = url_to_scp(argv[0])
+
+    if True:
+        print "true"
+        return 0
+    else:
+        print "false"
+        return 1
+
+
+# TODO: fetch
+# TODO: rebase
+def sync_down(argv):
+    remote_url = url_to_scp(argv[0])
+
+    print "Downloading history"
+    scp(remote_url, "history", ".gut/history")
+
+    print "Processing history"
+    files = calc_working_tree()
+
+    for n, wtfilename in enumerate(files):
+        print >>sys.stderr, "%d%%" % int(n*100/len(files))
+        print wtfilename
+        wtfile = files[wtfilename]
+
+        if wtfile.mode == "000000":
+            if os.path.exists(wtfile.filename):
+                os.unlink(wtfile.filename)
+        else:
+            need_sync = False
+            if not os.path.exists(wtfile.filename):
+                need_sync = True
+            elif wtfile.object != hashlib.sha1(file(wtfile.filename).read()).hexdigest():
+                need_sync = True
+            if need_sync:
+                scp(remote_url, "objects/"+wtfile.object, wtfile.filename)
+
+            # TODO: check file mode first
+            os.chmod(wtfile.filename, int(wtfile.mode, 8))
+
+    if True:
+        print "true"
+        return 0
+    else:
+        print "false"
+        return 1
+
+
+def fetch(argv):
+    remote_url = url_to_scp(argv[0])
+    target_folder = argv[1]
+
+    if not os.path.exists(target_folder):
+        os.mkdir(target_folder)
+    if not os.path.exists(target_folder + "/.gut"):
+        os.mkdir(target_folder + "/.gut")
+    if not os.path.exists(target_folder + "/.gut/objects"):
+        os.mkdir(target_folder + "/.gut/objects")
+
+    scp(remote_url, "repo_id", target_folder+"/.gut/repo_id")
+    file(target_folder+"/.gut/history", "w").write("")
+    file(target_folder+"/.gut/local_history", "w").write("")
+
+    os.chdir(target_folder)
+    sync_down(argv)
+
+
+# TODO: limit to last $n
+def log(argv):
+    #count = argv[0]
+
+    for commit in read_history(".gut/history"):
+        print commit
+
+
+def init(argv):
+    # for internal testing only
+    if not os.path.exists(argv[1]):
+        os.mkdir(argv[1])
+    file(argv[1] + "/repo_id", "w").write(random_hash())
+    file(argv[1] + "/history", "w").write("")
+    if not os.path.exists(argv[1]+"/objects"):
+        os.mkdir(argv[1]+"/objects")
+
+
+def main(argv):
+    if len(argv) == 0:
+        print "Usage: guts [command]"
+        return 1
+
+    if argv[0] == "identifier": return identifier(argv[1:])
+    if argv[0] == "size": return size(argv[1:])
+    if argv[0] == "history-size": return history_size(argv[1:])
+    if argv[0] == "unsynced-file-paths": return unsynced_file_paths(argv[1:])
+    if argv[0] == "current-revision": return current_revision(argv[1:])
+    if argv[0] == "has-remote-changes": return has_remote_changes(argv[1:])
+    if argv[0] == "has-local-changes": return has_local_changes(argv[1:])
+    if argv[0] == "sync-up": return sync_up(argv[1:])
+    if argv[0] == "sync-down": return sync_down(argv[1:])
+    if argv[0] == "fetch": return fetch(argv[1:])
+    if argv[0] == "log": return log(argv[1:])
+    if argv[0] == "init": return init(argv[1:])
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
+
+moo = """
+"git push --progress master"
+return a stream of updates; first "^Compressing [0-9]+%" and then "[0-9]+%" with optional "|<speed>"
+
+"git add --all"
+stage local changes
+
+"git commit -m <message> --author='Username <email>'"
+
+"git fetch --progress <url>"
+fetch remote changes
+return a stream of updates; first "^Compressing [0-9]+%" and then "[0-9]+%" with optional "|<speed>"
+
+"git rebase -v FETCH_HEAD"
+merge remote changes
+
+"git checkout --theirs <path>"
+"git checkout --ours <path>"
+"git add <path>"
+conflict resolution
+
+"git rebase --continue"
+carry on updating
+
+"git rebase --skip"
+
+"""
