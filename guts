@@ -18,12 +18,6 @@ def random_hash():
     return hashlib.sha1(str(base)).hexdigest()
 
 
-def url_to_scp(url):
-    url = url.replace("ssh://", "")
-    url = url.replace(".org", ".org:")
-    return url
-
-
 def read_history(filename):
     lines = file(filename).readlines()
 
@@ -61,7 +55,7 @@ def read_history(filename):
 def calc_working_tree():
     files = {}
     for commit in read_history(".gut/history"):
-        for ch in commit.chs:
+        for ch in commit.changes:
             if ch.type == "add":
                 files[ch.filename] = File(ch.filename, ch.mode, ch.object)
             if ch.type == "modify":
@@ -73,9 +67,16 @@ def calc_working_tree():
     return files
 
 
-def scp(remote_url, remote_path, local_path):
-    #print "scp -q "+remote_url+"/"+remote_path+" "+local_path
-    os.system('scp -q "%s/%s" "%s"' % (remote_url, remote_path, local_path))
+def scp_down(repo_url, repo_path, local_path):
+    repo_url = repo_url.replace("ssh://", "")
+    repo_url = repo_url.replace(".org", ".org:")
+    os.system('scp -q "%s/%s" "%s"' % (repo_url, repo_path, local_path))
+
+
+def scp_up(repo_url, local_path, repo_path):
+    repo_url = repo_url.replace("ssh://", "")
+    repo_url = repo_url.replace(".org", ".org:")
+    os.system('scp -q "%s" "%s/%s"' % (local_path, repo_url, repo_path))
 
 
 #######################################################################
@@ -89,7 +90,7 @@ class Commit(object):
         self.hash = "1234"
         self.changes = []
 
-    def __str__(self):
+    def to_git(self):
         s = ""
         s = s + "commit %s\n" % self.hash
         s = s + "Author: %s\n" % self.author
@@ -98,7 +99,16 @@ class Commit(object):
         s = s + "    %s\n" % self.msg
         s = s + "\n"
         for change in self.changes:
-            s = s + str(change) + "\n"
+            s = s + change.to_git() + "\n"
+        return s
+
+    def to_gut(self):
+        s = ""
+        s = s + "commit:%s\n" % self.hash
+        s = s + "author:%s\n" % self.author
+        s = s + "date:%s\n" % self.date
+        for change in self.changes:
+            s = s + change.to_gut() + "\n"
         return s
 
 
@@ -106,12 +116,16 @@ class Change(object):
     def __init__(self):
         pass
 
+    def to_gut(self):
+        return self.line
+
 
 class Add(Change):
     def __init__(self, line):
+        self.line = line
         self.type, self.filename, self.mode, self.object = line.split(":")
 
-    def __str__(self):
+    def to_git(self):
         return ":%s %s %s %s %s  %s" % (
             "000000", self.mode, "0000000...", self.object[0:7] + "...",
             self.type[0].upper(),
@@ -121,9 +135,10 @@ class Add(Change):
 
 class Modify(Change):
     def __init__(self, line):
+        self.line = line
         self.type, self.filename, self.mode, self.object = line.split(":")
 
-    def __str__(self):
+    def to_git(self):
         return ":%s %s %s %s %s  %s" % (
             self.mode, self.mode, self.object[0:7] + "...", self.object[0:7] + "...",
             self.type[0].upper(),
@@ -133,9 +148,10 @@ class Modify(Change):
 
 class Delete(Change):
     def __init__(self, line):
+        self.line = line
         self.type, self.filename = line.split(":")
 
-    def __str__(self):
+    def to_git(self):
         return ":%s %s %s %s %s  %s" % (
             "100644", "000000", "1234567...", "0000000...",
             self.type[0].upper(),
@@ -173,15 +189,12 @@ def unsynced_file_paths(argv):
 
 
 def current_revision(argv):
-    print hashlib.sha1(
-        file(".gut/history").read() +
-        file(".gut/local_history").read()
-    ).hexdigest()
+    print hashlib.sha1(file(".gut/history").read()).hexdigest()
 
 
 def has_remote_changes(argv):
-    remote_url = url_to_scp(argv[0])
-    scp(remote_url, "history", ".gut/tmp-remote-history")
+    remote_url = argv[0]
+    scp_down(remote_url, "history", ".gut/tmp-remote-history")
 
     local = hashlib.sha1(file(".gut/history").read()).hexdigest()
     remote = hashlib.sha1(file(".gut/tmp-remote-history").read()).hexdigest()
@@ -216,10 +229,71 @@ def has_local_changes(argv):
 # TODO: add & commit
 # TODO: push
 def sync_up(argv):
-    remote_url = url_to_scp(argv[0])
+    remote_url = argv[0]
 
     known_files = calc_working_tree()
     actual_files = {}
+
+    for dirpath, dirnames, filenames in os.walk("."):
+        if ".gut" in dirpath:
+            continue
+        for filename in filenames:
+            full_name = os.path.join(dirpath, filename)
+            if full_name[0:2] == "./":
+                full_name = full_name[2:]
+            actual_files[full_name] = File(
+                full_name,
+                os.stat(full_name)[0],
+                hashlib.sha1(file(full_name).read()).hexdigest()
+            )
+
+    commit = Commit()
+    commit.hash = random_hash() # FIXME: hash(previous commit's hash + changes)
+    commit.author = "Shish <shish@shishnet.org>" # FIXME: current user
+    commit.date = "2012-02-20 00:00:00 +0100" # FIXME: now
+    for f in actual_files:
+        if f not in known_files:
+            commit.changes.append(Add(":".join([
+                "add",
+                f,
+                "%o" % actual_files[f].mode,
+                actual_files[f].object,
+            ])))
+    for f in known_files:
+        if f not in actual_files:
+            if known_files[f].mode != "000000":
+                commit.changes.append(Delete("delete:"+f))
+    for f in known_files:
+        if f in actual_files:
+            if actual_files[f].object != known_files[f].object:
+                commit.changes.append(Delete(":".join([
+                    "modify",
+                    f,
+                    actual_files[f].mode,
+                    actual_files[f].object,
+                ])))
+
+    if len(commit.changes) == 0:
+        print "no changes to sync"
+        return 0
+
+    trim = False
+
+    # TODO: lock repo
+    for ch in commit.changes:
+        if ch.type == "add" or ch.type == "modify":
+            scp_up(remote_url, ch.filename, "objects/%s/%s" % (ch.object[0:2], ch.object))
+        if ch.type == "modify" or ch.type == "delete":
+            if trim:
+                pass # FIXME: delete file.old_objects[-1]
+
+    h = file(".gut/history", "a")
+    h.write("\n")
+    h.write(commit.to_gut())
+    h.close()
+
+    scp_up(remote_url, ".gut/history", "history")
+    # TODO: unlock repo
 
     if True:
         print "true"
@@ -230,11 +304,11 @@ def sync_up(argv):
 
 
 def sync_down(argv):
-    remote_url = url_to_scp(argv[0])
+    remote_url = argv[0]
     conflicts = False
 
     print "Downloading history"
-    scp(remote_url, "history", ".gut/history")
+    scp_down(remote_url, "history", ".gut/history")
 
     print "Processing history"
     files = calc_working_tree()
@@ -256,7 +330,7 @@ def sync_down(argv):
                 if current_hash and current_hash not in wtfile.old_objects:
                     conflicts = True
                     os.rename(wtfile.filename, wtfile.filename+"."+str(time.time()))
-                scp(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
+                scp_down(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
 
             if os.stat(wtfile.filename)[0] != int(wtfile.mode, 8):
                 os.chmod(wtfile.filename, int(wtfile.mode, 8))
@@ -270,7 +344,7 @@ def sync_down(argv):
 
 
 def fetch(argv):
-    remote_url = url_to_scp(argv[0])
+    remote_url = argv[0]
     target_folder = argv[1]
 
     if not os.path.exists(target_folder):
@@ -278,9 +352,8 @@ def fetch(argv):
     if not os.path.exists(target_folder + "/.gut"):
         os.mkdir(target_folder + "/.gut")
 
-    scp(remote_url, "repo_id", target_folder+"/.gut/repo_id")
+    scp_down(remote_url, "repo_id", target_folder+"/.gut/repo_id")
     file(target_folder+"/.gut/history", "w").write("")
-    file(target_folder+"/.gut/local_history", "w").write("")
 
     os.chdir(target_folder)
     sync_down(argv)
@@ -291,17 +364,19 @@ def log(argv):
     #count = argv[0]
 
     for commit in read_history(".gut/history"):
-        print commit
+        print commit.to_git()
 
 
 def init(argv):
     # for internal testing only
-    if not os.path.exists(argv[1]):
-        os.mkdir(argv[1])
-    file(argv[1] + "/repo_id", "w").write(random_hash())
-    file(argv[1] + "/history", "w").write("")
-    if not os.path.exists(argv[1]+"/objects"):
-        os.mkdir(argv[1]+"/objects")
+    if not os.path.exists(argv[0]):
+        os.mkdir(argv[0])
+    file(argv[0] + "/repo_id", "w").write(random_hash())
+    file(argv[0] + "/history", "w").write("")
+    if not os.path.exists(argv[0]+"/objects"):
+        os.mkdir(argv[0]+"/objects")
+        for d in ["%02x" %n for n in range(0, 256)]:
+            os.mkdir(argv[0]+"/objects/"+d)
 
 
 def main(argv):
