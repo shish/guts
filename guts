@@ -322,31 +322,3 @@ def main(argv):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
-
-moo = """
-"git push --progress master"
-return a stream of updates; first "^Compressing [0-9]+%" and then "[0-9]+%" with optional "|<speed>"
-
-"git add --all"
-stage local changes
-
-"git commit -m <message> --author='Username <email>'"
-
-"git fetch --progress <url>"
-fetch remote changes
-return a stream of updates; first "^Compressing [0-9]+%" and then "[0-9]+%" with optional "|<speed>"
-
-"git rebase -v FETCH_HEAD"
-merge remote changes
-
-"git checkout --theirs <path>"
-"git checkout --ours <path>"
-"git add <path>"
-conflict resolution
-
-"git rebase --continue"
-carry on updating
-
-"git rebase --skip"
-
-"""
