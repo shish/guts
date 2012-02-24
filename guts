@@ -229,7 +229,7 @@ def has_local_changes(argv):
 # TODO: add & commit
 # TODO: push
 def sync_up(argv):
-    remote_url = argv[0]
+    remote_url = file(".gut/remote_url").read().strip()
 
     known_files = calc_working_tree()
     actual_files = {}
@@ -304,7 +304,7 @@ def sync_up(argv):
 
 
 def sync_down(argv):
-    remote_url = argv[0]
+    remote_url = file(".gut/remote_url").read().strip()
     conflicts = False
 
     print "Downloading history"
@@ -354,6 +354,7 @@ def fetch(argv):
 
     scp_down(remote_url, "repo_id", target_folder+"/.gut/repo_id")
     file(target_folder+"/.gut/history", "w").write("")
+    file(target_folder+"/.gut/remote_url", "w").write(remote_url)
 
     os.chdir(target_folder)
     sync_down(argv)
