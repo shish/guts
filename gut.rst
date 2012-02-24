@@ -42,9 +42,13 @@ working tree as the current directory.
 Commands are:
 
 
-fetch <repository URL> <target directory>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+fetch <repository URL> <target directory> <author ID>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Downloads a previously-unknown repository, "clone" in git terms
+
+Author ID is eg "Shish <spam@shishnet.org>"
+
+**TODO:** Maybe we should have a 'configure' command first?
 
 identifier
 ~~~~~~~~~~
@@ -54,7 +58,7 @@ Git and Gut both use a 40-byte hex string
 
 size
 ~~~~
-Return the size of the working tree in bytes (history subfolder included?)
+Return the size of the working tree in bytes (**TODO:** history subfolder included?)
 
 history-size
 ~~~~~~~~~~~~
@@ -120,7 +124,7 @@ appear in any order, added/edited/deleted appearing multiple times::
     edited:<filename>
     deleted:<filename>
 
-TODO: would it be better to represent renames as::
+**TODO**: would it be better to represent renames as::
 
     rename:<filename1><tab><filename2>
 
