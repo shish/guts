@@ -219,7 +219,7 @@ def has_local_changes(argv):
             (f.mode != "000000" and f.object != hashlib.sha1(file(f.filename).read()).hexdigest()) or
             (f.mode != "000000" and os.stat(f.filename)[0] != int(f.mode, 8))
         ):
-            print "true ("+f.filename+")"
+            print "true"
             return 0
 
     print "false"
