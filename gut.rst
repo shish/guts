@@ -13,9 +13,9 @@ own back-end and your name is ted, maybe call it GutTed and link that to
 My hope is that there won't be competition for the gut name as it'll only be
 used by developers locally, and any clients which are good enough for public
 release can be given their own entry in sparkleshare's plugin table. Another
-possibility would be to extend sparkleshare to automatically use /usr/bin/XY
-with the gut protocol for a repository called /home/foo/myrepo.XY; or maybe
-/usr/lib/sparkleshare/backends/XY?
+possibility would be to extend sparkleshare to automatically use ``/usr/lib/sparkleshare/backends/XY``
+with the gut protocol for a repository called ``/home/foo/myrepo.XY``, thus
+allowing new back ends to be added with no sparkleshare code changes at all.
 
 For the original .NET based API, see -->
 https://github.com/hbons/SparkleShare/wiki/Implementing-a-backend
