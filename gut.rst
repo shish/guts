@@ -34,6 +34,8 @@ find it.
 Return values are strings printed to stdout. Boolean values are "true" and
 "false".
 
+Extra information (progress reports, warning messages) go on stderr.
+
 Other than "fetch", all commands are assumed to be run with the root of the
 working tree as the current directory.
 
