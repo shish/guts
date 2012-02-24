@@ -36,17 +36,19 @@ Return values are strings printed to stdout. Boolean values are "true" and
 
 Extra information (progress reports, warning messages) go on stderr.
 
-Other than "fetch", all commands are assumed to be run with the root of the
-working tree as the current directory.
+If a target directory isn't specified, all commands are assumed to be run
+with the root of the working tree as the current directory.
 
 Commands are:
 
 
 configure <target directory> --user=<author ID> --url=<repository URL>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Configures a (possibly not-yet-existing) folder
+Stores some settings in a folder (creating the folder first if necessary)
 
-Author ID is eg "Shish <spam@shishnet.org>"
+Author ID is name and email, eg "Shish <spam@shishnet.org>"
+
+URL should be a complete standard URL, eg ``ssh://shishnet.org/home/shish/test.gut``
 
 fetch
 ~~~~~
