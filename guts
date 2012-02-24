@@ -193,7 +193,7 @@ def current_revision(argv):
 
 
 def has_remote_changes(argv):
-    remote_url = argv[0]
+    remote_url = file(".gut/remote_url").read().strip()
     scp_down(remote_url, "history", ".gut/tmp-remote-history")
 
     local = hashlib.sha1(file(".gut/history").read()).hexdigest()
