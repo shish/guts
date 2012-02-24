@@ -23,7 +23,7 @@ Getting Started
 
     you@server:~/ $ guts init /home/you/your-repo.gut
 
-2a) Connect with SparkleShare::
+2) Connect with SparkleShare::
 
     you@client:~/ $ sudo ln -s /home/you/src/guts/guts /usr/bin/gut
     
@@ -31,7 +31,7 @@ Getting Started
     Address: you@server
     Remote Path: /home/you/your-repo.gut
 
-2b) Use the command line client on its own::
+3) Check out the command line client on its own::
 
     you@client:~/ $ guts configure local-folder --user="Your Name <you@example.com>" --url=ssh://you@server/home/you/your-repo.gut
     you@client:~/ $ cd local-folder
