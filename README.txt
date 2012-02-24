@@ -9,3 +9,5 @@ GutS: Shish's SparkleShare back-end, a proof of concept implementation
 of the Gut protocol.
 
 You'd have to have a lot of guts to use it on important data.
+
+For details of the protocol, see gut.rst
