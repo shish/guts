@@ -248,9 +248,9 @@ def sync_up(argv):
             )
 
     commit = Commit()
-    commit.hash = random_hash() # FIXME: hash(previous commit's hash + changes)
-    commit.author = "Shish <shish@shishnet.org>" # FIXME: current user
-    commit.date = "2012-02-20 00:00:00 +0100" # FIXME: now
+    commit.hash = random_hash()  # FIXME: hash(previous commit's hash + changes)
+    commit.author = "Shish <shish@shishnet.org>"  # FIXME: current user
+    commit.date = "2012-02-20 00:00:00 +0100"  # FIXME: now
     for f in actual_files:
         if f not in known_files:
             commit.changes.append(Add(":".join([
@@ -262,7 +262,7 @@ def sync_up(argv):
     for f in known_files:
         if f not in actual_files:
             if known_files[f].mode != "000000":
-                commit.changes.append(Delete("delete:"+f))
+                commit.changes.append(Delete("delete:" + f))
     for f in known_files:
         if f in actual_files:
             if actual_files[f].object != known_files[f].object:
@@ -285,7 +285,7 @@ def sync_up(argv):
             scp_up(remote_url, ch.filename, "objects/%s/%s" % (ch.object[0:2], ch.object))
         if ch.type == "modify" or ch.type == "delete":
             if trim:
-                pass # FIXME: delete file.old_objects[-1]
+                pass  # FIXME: delete file.old_objects[-1]
 
     h = file(".gut/history", "a")
     h.write("\n")
@@ -329,7 +329,7 @@ def sync_down(argv):
             if wtfile.object != current_hash:
                 if current_hash and current_hash not in wtfile.old_objects:
                     conflicts = True
-                    os.rename(wtfile.filename, wtfile.filename+"."+str(time.time()))
+                    os.rename(wtfile.filename, wtfile.filename + "." + str(time.time()))
                 scp_down(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
 
             if os.stat(wtfile.filename)[0] != int(wtfile.mode, 8):
@@ -352,9 +352,9 @@ def fetch(argv):
     if not os.path.exists(target_folder + "/.gut"):
         os.mkdir(target_folder + "/.gut")
 
-    scp_down(remote_url, "repo_id", target_folder+"/.gut/repo_id")
-    file(target_folder+"/.gut/history", "w").write("")
-    file(target_folder+"/.gut/remote_url", "w").write(remote_url)
+    scp_down(remote_url, "repo_id", target_folder + "/.gut/repo_id")
+    file(target_folder + "/.gut/history", "w").write("")
+    file(target_folder + "/.gut/remote_url", "w").write(remote_url)
 
     os.chdir(target_folder)
     sync_down(argv)
@@ -369,15 +369,14 @@ def log(argv):
 
 
 def init(argv):
-    # for internal testing only
     if not os.path.exists(argv[0]):
         os.mkdir(argv[0])
     file(argv[0] + "/repo_id", "w").write(random_hash())
     file(argv[0] + "/history", "w").write("")
-    if not os.path.exists(argv[0]+"/objects"):
-        os.mkdir(argv[0]+"/objects")
-        for d in ["%02x" %n for n in range(0, 256)]:
-            os.mkdir(argv[0]+"/objects/"+d)
+    if not os.path.exists(argv[0] + "/objects"):
+        os.mkdir(argv[0] + "/objects")
+        for d in ["%02x" % n for n in range(0, 256)]:
+            os.mkdir(argv[0] + "/objects/" + d)
 
 
 def main(argv):
