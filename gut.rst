@@ -93,8 +93,7 @@ get-change-sets <n>
 ~~~~~~~~~~~~~~~~~~~
 Return some recent repository change sets
 
-Format to be finalised. Currently it uses the "git --raw --date=iso" format,
-but a more tool-agnostic format might be devised.
+See "change set format" below for details
 
 init <directory>
 ~~~~~~~~~~~~~~~~
@@ -106,3 +105,17 @@ unsynced-file-paths
 ~~~~~~~~~~~~~~~~~~~
 The SS Git back-end has this function, but it's not in the back-end
 documentation and it seems unused...
+
+
+Change Set Format
+-----------------
+aside from "revision" coming first, all other fields are optional and may
+appear in any order, added/edited/deleted appearing multiple times.
+
+revision:<commit ID>
+user:User Name <email@address.com>
+timestamp:<ISO formatted date>
+magical:<true/false "true" is used by git merge commits>
+added:<filename>
+edited:<filename>
+deleted:<filename>

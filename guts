@@ -104,11 +104,20 @@ class Commit(object):
 
     def to_gut(self):
         s = ""
+        s = s + "revision:%s\n" % self.hash
+        s = s + "user:%s\n" % self.author
+        s = s + "timestamp:%s\n" % self.date
+        for change in self.changes:
+            s = s + change.to_gut() + "\n"
+        return s
+
+    def to_guts(self):
+        s = ""
         s = s + "commit:%s\n" % self.hash
         s = s + "author:%s\n" % self.author
         s = s + "date:%s\n" % self.date
         for change in self.changes:
-            s = s + change.to_gut() + "\n"
+            s = s + change.to_guts() + "\n"
         return s
 
 
@@ -116,7 +125,7 @@ class Change(object):
     def __init__(self):
         pass
 
-    def to_gut(self):
+    def to_guts(self):
         return self.line
 
 
@@ -132,6 +141,9 @@ class Add(Change):
             self.filename
         )
 
+    def to_gut(self):
+        return "added:" + self.filename
+
 
 class Modify(Change):
     def __init__(self, line):
@@ -145,6 +157,9 @@ class Modify(Change):
             self.filename
         )
 
+    def to_gut(self):
+        return "edited:" + self.filename
+
 
 class Delete(Change):
     def __init__(self, line):
@@ -157,6 +172,9 @@ class Delete(Change):
             self.type[0].upper(),
             self.filename
         )
+
+    def to_gut(self):
+        return "deleted:" + self.filename
 
 
 class File(object):
@@ -287,7 +305,7 @@ def sync_up(argv):
 
     h = file(".gut/history", "a")
     h.write("\n")
-    h.write(commit.to_gut())
+    h.write(commit.to_guts())
     h.close()
 
     scp_up(remote_url, ".gut/history", "history")
@@ -359,11 +377,11 @@ def fetch(argv):
 
 
 # TODO: limit to last $n
-def log(argv):
+def get_change_sets(argv):
     #count = argv[0]
 
     for commit in read_history(".gut/history"):
-        print commit.to_git()
+        print commit.to_gut()
 
 
 def init(argv):
@@ -392,7 +410,7 @@ def main(argv):
     if argv[0] == "sync-up": return sync_up(argv[1:])
     if argv[0] == "sync-down": return sync_down(argv[1:])
     if argv[0] == "fetch": return fetch(argv[1:])
-    if argv[0] == "log": return log(argv[1:])
+    if argv[0] == "get-change-sets": return get_change_sets(argv[1:])
     if argv[0] == "init": return init(argv[1:])
 
 
