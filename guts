@@ -422,7 +422,7 @@ def main(argv):
         return 1
 
     if argv[0] == "init": return init(argv[1:])
-    if argv[0] == "configure": return init(argv[1:])
+    if argv[0] == "configure": return configure(argv[1:])
     if argv[0] == "fetch": return fetch()
     if argv[0] == "identifier": return identifier()
     if argv[0] == "size": return size()
