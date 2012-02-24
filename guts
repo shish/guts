@@ -273,7 +273,7 @@ def sync_up(argv):
                 full_name = full_name[2:]
             actual_files[full_name] = File(
                 full_name,
-                os.stat(full_name)[0],
+                "%o" % os.stat(full_name)[0],
                 hashlib.sha1(file(full_name).read()).hexdigest()
             )
 
@@ -286,7 +286,7 @@ def sync_up(argv):
             commit.changes.append(Add(":".join([
                 "add",
                 f,
-                "%o" % actual_files[f].mode,
+                actual_files[f].mode,
                 actual_files[f].object,
             ])))
     for f in known_files:
@@ -296,7 +296,7 @@ def sync_up(argv):
     for f in known_files:
         if f in actual_files:
             if actual_files[f].object != known_files[f].object:
-                commit.changes.append(Delete(":".join([
+                commit.changes.append(Modify(":".join([
                     "modify",
                     f,
                     actual_files[f].mode,
@@ -360,6 +360,8 @@ def sync_down(argv):
                 if current_hash and current_hash not in wtfile.old_objects:
                     conflicts = True
                     os.rename(wtfile.filename, wtfile.filename + "." + str(time.time()))
+                if not os.path.exists(os.path.dirname(wtfile.filename)):
+                    os.makedirs(os.path.dirname(wtfile.filename))
                 scp_down(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
 
             if os.stat(wtfile.filename)[0] != int(wtfile.mode, 8):
