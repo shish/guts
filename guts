@@ -226,8 +226,6 @@ def has_local_changes(argv):
     return 1
 
 
-# TODO: add & commit
-# TODO: push
 def sync_up(argv):
     remote_url = file(".gut/remote_url").read().strip()
 
