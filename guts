@@ -383,11 +383,11 @@ def configure(argv):
     author = argv[2][len("--user="):]
 
     if not os.path.exists(target_folder+"/.gut"):
-        os.makedirs(target_folder)
+        os.makedirs(target_folder+"/.gut")
 
     file(target_folder + "/.gut/history", "w").write("")
-    file(target_folder + "/.gut/remote_url", "w").write(remote_url)
-    file(target_folder + "/.gut/local_user", "w").write(author)
+    file(target_folder + "/.gut/remote_url", "w").write(remote_url+"\n")
+    file(target_folder + "/.gut/local_user", "w").write(author+"\n")
 
 
 def fetch():
