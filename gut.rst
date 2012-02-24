@@ -14,7 +14,8 @@ My hope is that there won't be competition for the gut name as it'll only be
 used by developers locally, and any clients which are good enough for public
 release can be given their own entry in sparkleshare's plugin table. Another
 possibility would be to extend sparkleshare to automatically use /usr/bin/XY
-with the gut protocol for a repository called /home/foo/myrepo.XY
+with the gut protocol for a repository called /home/foo/myrepo.XY; or maybe
+/usr/lib/sparkleshare/backends/XY?
 
 Anyway, on to the protocol.
 
