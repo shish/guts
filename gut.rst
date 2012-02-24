@@ -17,6 +17,11 @@ possibility would be to extend sparkleshare to automatically use /usr/bin/XY
 with the gut protocol for a repository called /home/foo/myrepo.XY; or maybe
 /usr/lib/sparkleshare/backends/XY?
 
+For the original .NET based API, see -->
+https://github.com/hbons/SparkleShare/wiki/Implementing-a-backend
+<-- the gut protocol should always be a command line version of this, so look
+there for updates.
+
 Anyway, on to the protocol.
 
 
@@ -99,9 +104,3 @@ unsynced-file-paths
 ~~~~~~~~~~~~~~~~~~~
 The SS Git back-end has this function, but it's not in the back-end
 documentation and it seems unused...
-
-
-For the original .NET based API, see -->
-https://github.com/hbons/SparkleShare/wiki/Implementing-a-backend
-<-- the gut protocol should always be a command line version of this, so look
-there for updates.
