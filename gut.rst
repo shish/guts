@@ -42,13 +42,15 @@ working tree as the current directory.
 Commands are:
 
 
-fetch <repository URL> <target directory> <author ID>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Downloads a previously-unknown repository, "clone" in git terms
+configure <target directory> --user=<author ID> --url=<repository URL>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Configures a (possibly not-yet-existing) folder
 
 Author ID is eg "Shish <spam@shishnet.org>"
 
-**TODO:** Maybe we should have a 'configure' command first?
+fetch
+~~~~~
+Takes a bare (but configured) folder and fetches files into it
 
 identifier
 ~~~~~~~~~~
@@ -93,8 +95,8 @@ Pull remote changes to the local working tree. Print progress as above.
 
 Return a boolean for success.
 
-get-change-sets <n>
-~~~~~~~~~~~~~~~~~~~
+get-change-sets --count=<n>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Return some recent repository change sets
 
 See "change set format" below for details

@@ -188,29 +188,29 @@ class File(object):
 #######################################################################
 # commands
 
-def identifier(argv):
+def identifier():
     print file(".gut/repo_id").read()
 
 
-def size(argv):
+def size():
     os.system("du -cb ./ | grep total | cut -f 1")
 
 
-def history_size(argv):
+def history_size():
     os.system("du -cb ./.gut/ | grep total | cut -f 1")
 
 
 # TODO list local mods (A, M, ? in git status terms)
 # is this used?
-def unsynced_file_paths(argv):
+def unsynced_file_paths():
     pass
 
 
-def current_revision(argv):
+def current_revision():
     print hashlib.sha1(file(".gut/history").read()).hexdigest()
 
 
-def has_remote_changes(argv):
+def has_remote_changes():
     remote_url = file(".gut/remote_url").read().strip()
     scp_down(remote_url, "history", ".gut/tmp-remote-history")
 
@@ -225,7 +225,7 @@ def has_remote_changes(argv):
         return 1
 
 
-def has_local_changes(argv):
+def has_local_changes():
     files = calc_working_tree()
 
     # check known files for changes
@@ -258,7 +258,7 @@ def has_local_changes(argv):
     return 1
 
 
-def sync_up(argv):
+def sync_up():
     remote_url = file(".gut/remote_url").read().strip()
     author = file(".gut/local_user").read().strip()
 
@@ -334,7 +334,7 @@ def sync_up(argv):
         return 1
 
 
-def sync_down(argv):
+def sync_down():
     remote_url = file(".gut/remote_url").read().strip()
     conflicts = False
 
@@ -377,23 +377,23 @@ def sync_down(argv):
         return 1
 
 
-def fetch(argv):
-    remote_url = argv[0]
-    target_folder = argv[1]
-    author = argv[2]
+def configure(argv):
+    target_folder = argv[0]
+    remote_url = argv[1][len("--url="):]
+    author = argv[2][len("--user="):]
 
-    if not os.path.exists(target_folder):
-        os.mkdir(target_folder)
-    if not os.path.exists(target_folder + "/.gut"):
-        os.mkdir(target_folder + "/.gut")
+    if not os.path.exists(target_folder+"/.gut"):
+        os.makedirs(target_folder)
 
-    scp_down(remote_url, "repo_id", target_folder + "/.gut/repo_id")
     file(target_folder + "/.gut/history", "w").write("")
     file(target_folder + "/.gut/remote_url", "w").write(remote_url)
     file(target_folder + "/.gut/local_user", "w").write(author)
 
-    os.chdir(target_folder)
-    sync_down(argv)
+
+def fetch():
+    remote_url = file(".gut/remote_url").read().strip()
+    scp_down(remote_url, "repo_id", ".gut/repo_id")
+    sync_down()
 
 
 # TODO: limit to last $n
@@ -405,14 +405,15 @@ def get_change_sets(argv):
 
 
 def init(argv):
-    if not os.path.exists(argv[0]):
-        os.mkdir(argv[0])
-    file(argv[0] + "/repo_id", "w").write(random_hash())
-    file(argv[0] + "/history", "w").write("")
-    if not os.path.exists(argv[0] + "/objects"):
-        os.mkdir(argv[0] + "/objects")
+    target = argv[0]
+    if not os.path.exists(target):
+        os.makedirs(target)
+    file(target + "/repo_id", "w").write(random_hash())
+    file(target + "/history", "w").write("")
+    if not os.path.exists(target + "/objects"):
+        os.mkdir(target + "/objects")
         for d in ["%02x" % n for n in range(0, 256)]:
-            os.mkdir(argv[0] + "/objects/" + d)
+            os.mkdir(target + "/objects/" + d)
 
 
 def main(argv):
@@ -420,18 +421,19 @@ def main(argv):
         print "Usage: guts [command]"
         return 1
 
-    if argv[0] == "identifier": return identifier(argv[1:])
-    if argv[0] == "size": return size(argv[1:])
-    if argv[0] == "history-size": return history_size(argv[1:])
-    if argv[0] == "unsynced-file-paths": return unsynced_file_paths(argv[1:])
-    if argv[0] == "current-revision": return current_revision(argv[1:])
-    if argv[0] == "has-remote-changes": return has_remote_changes(argv[1:])
-    if argv[0] == "has-local-changes": return has_local_changes(argv[1:])
-    if argv[0] == "sync-up": return sync_up(argv[1:])
-    if argv[0] == "sync-down": return sync_down(argv[1:])
-    if argv[0] == "fetch": return fetch(argv[1:])
-    if argv[0] == "get-change-sets": return get_change_sets(argv[1:])
     if argv[0] == "init": return init(argv[1:])
+    if argv[0] == "configure": return init(argv[1:])
+    if argv[0] == "fetch": return fetch()
+    if argv[0] == "identifier": return identifier()
+    if argv[0] == "size": return size()
+    if argv[0] == "history-size": return history_size()
+    if argv[0] == "current-revision": return current_revision()
+    if argv[0] == "has-remote-changes": return has_remote_changes()
+    if argv[0] == "has-local-changes": return has_local_changes()
+    if argv[0] == "sync-up": return sync_up()
+    if argv[0] == "sync-down": return sync_down()
+    if argv[0] == "get-change-sets": return get_change_sets(argv[1:])
+    if argv[0] == "unsynced-file-paths": return unsynced_file_paths()
 
 
 if __name__ == "__main__":
