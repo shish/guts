@@ -228,6 +228,7 @@ def has_remote_changes(argv):
 def has_local_changes(argv):
     files = calc_working_tree()
 
+    # check known files for changes
     for n, wtfilename in enumerate(files):
         f = files[wtfilename]
 
@@ -239,6 +240,19 @@ def has_local_changes(argv):
         ):
             print "true"
             return 0
+
+    # check for new files
+    actual_files = {}
+    for dirpath, dirnames, filenames in os.walk("."):
+        if ".gut" in dirpath:
+            continue
+        for filename in filenames:
+            full_name = os.path.join(dirpath, filename)
+            if full_name[0:2] == "./":
+                full_name = full_name[2:]
+            if full_name not in files:
+                print "true"
+                return 0
 
     print "false"
     return 1
