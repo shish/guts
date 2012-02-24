@@ -110,12 +110,23 @@ documentation and it seems unused...
 Change Set Format
 -----------------
 aside from "revision" coming first, all other fields are optional and may
-appear in any order, added/edited/deleted appearing multiple times.
+appear in any order, added/edited/deleted appearing multiple times::
 
-revision:<commit ID>
-user:User Name <email@address.com>
-timestamp:<ISO formatted date>
-magical:<true/false "true" is used by git merge commits>
-added:<filename>
-edited:<filename>
-deleted:<filename>
+    revision:<commit ID>
+    user:User Name <email@address.com>
+    timestamp:<ISO formatted date>
+    magical:<true/false "true" is used by git merge commits>
+    added:<filename>
+    edited:<filename>
+    deleted:<filename>
+
+TODO: would it be better to represent renames as::
+
+    rename:<filename1><tab><filename2>
+
+or::
+
+    movedfrom:<filename1>
+    movedto:<filename2>
+
+?
