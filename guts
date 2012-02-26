@@ -67,12 +67,18 @@ def calc_working_tree():
 
 def net_download(repo_url, repo_path, local_path):
     up = urlparse(repo_url)
-    os.system('scp -q "%s:/%s" "%s"' % (up.hostname, up.path+"/"+repo_path, local_path))
+    if up.scheme == "ssh":
+        os.system('scp -q "%s:/%s" "%s"' % (up.hostname, up.path+"/"+repo_path, local_path))
+    if up.scheme == "rsync+ssh":
+        os.system('rsync "%s:/%s" "%s"' % (up.hostname, up.path+"/"+repo_path, local_path))
 
 
 def net_upload(repo_url, local_path, repo_path):
     up = urlparse(repo_url)
-    os.system('scp -q "%s" "%s:/%s"' % (local_path, up.hostname, up.path+"/"+repo_path))
+    if up.scheme == "ssh":
+        os.system('scp -q "%s" "%s:/%s"' % (local_path, up.hostname, up.path+"/"+repo_path))
+    if up.scheme == "rsync+ssh":
+        os.system('rsync "%s" "%s:/%s"' % (local_path, up.hostname, up.path+"/"+repo_path))
 
 
 #######################################################################
