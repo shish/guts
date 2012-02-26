@@ -32,7 +32,7 @@ def read_history(filename):
                 commits.append(commit)
             commit = Commit()
             commit.hash = v
-            commit.msg = "waffo"
+            commit.msg = "TODO"
             commit.changes = []
         if not commit:
             continue
@@ -67,13 +67,13 @@ def calc_working_tree():
     return files
 
 
-def scp_down(repo_url, repo_path, local_path):
+def net_download(repo_url, repo_path, local_path):
     repo_url = repo_url.replace("ssh://", "")
     repo_url = repo_url.replace(".org", ".org:")
     os.system('scp -q "%s/%s" "%s"' % (repo_url, repo_path, local_path))
 
 
-def scp_up(repo_url, local_path, repo_path):
+def net_upload(repo_url, local_path, repo_path):
     repo_url = repo_url.replace("ssh://", "")
     repo_url = repo_url.replace(".org", ".org:")
     os.system('scp -q "%s" "%s/%s"' % (local_path, repo_url, repo_path))
@@ -212,7 +212,7 @@ def current_revision():
 
 def has_remote_changes():
     remote_url = file(".gut/remote_url").read().strip()
-    scp_down(remote_url, "history", ".gut/tmp-remote-history")
+    net_download(remote_url, "history", ".gut/tmp-remote-history")
 
     local = hashlib.sha1(file(".gut/history").read()).hexdigest()
     remote = hashlib.sha1(file(".gut/tmp-remote-history").read()).hexdigest()
@@ -313,7 +313,7 @@ def sync_up():
     # TODO: lock repo
     for ch in commit.changes:
         if ch.type == "add" or ch.type == "modify":
-            scp_up(remote_url, ch.filename, "objects/%s/%s" % (ch.object[0:2], ch.object))
+            net_upload(remote_url, ch.filename, "objects/%s/%s" % (ch.object[0:2], ch.object))
         if ch.type == "modify" or ch.type == "delete":
             if trim:
                 pass  # FIXME: delete file.old_objects[-1]
@@ -323,7 +323,7 @@ def sync_up():
     h.write(commit.to_guts())
     h.close()
 
-    scp_up(remote_url, ".gut/history", "history")
+    net_upload(remote_url, ".gut/history", "history")
     # TODO: unlock repo
 
     if True:
@@ -339,7 +339,7 @@ def sync_down():
     conflicts = False
 
     print "Downloading history"
-    scp_down(remote_url, "history", ".gut/history")
+    net_download(remote_url, "history", ".gut/history")
 
     print "Processing history"
     files = calc_working_tree()
@@ -364,7 +364,7 @@ def sync_down():
                 filedir = os.path.dirname(wtfile.filename)
                 if filedir and not os.path.exists(filedir):
                     os.makedirs(filedir)
-                scp_down(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
+                net_download(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
 
             if os.stat(wtfile.filename)[0] != int(wtfile.mode, 8):
                 os.chmod(wtfile.filename, int(wtfile.mode, 8))
@@ -392,7 +392,7 @@ def configure(argv):
 
 def fetch():
     remote_url = file(".gut/remote_url").read().strip()
-    scp_down(remote_url, "repo_id", ".gut/repo_id")
+    net_download(remote_url, "repo_id", ".gut/repo_id")
     sync_down()
 
 
