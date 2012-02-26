@@ -403,9 +403,15 @@ def fetch():
     sync_down()
 
 
-# TODO: limit to last $n
 def get_change_sets(count):
+    # TODO: implement this as a queue to save memory?
+    # TODO: only read the end part of the file?
+    commits = []
     for commit in read_history(".gut/history"):
+        commits.append(commit)
+    if count > 0:
+        commits = commits[-count:]
+    for commit in commits:
         print commit.to_gut()
 
 
@@ -463,7 +469,7 @@ def main(argv):
     parser_sync_down.set_defaults(func=sync_down)
 
     parser_get_change_sets = subparsers.add_parser('get-change-sets', help='list recent changes')
-    parser_get_change_sets.add_argument("--count")
+    parser_get_change_sets.add_argument("--count", default=0, type=int)
     parser_get_change_sets.set_defaults(func=get_change_sets)
 
     args = parser.parse_args()
@@ -471,6 +477,7 @@ def main(argv):
         func = args.func
         del vars(args)['func']
         return func(**vars(args))
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
