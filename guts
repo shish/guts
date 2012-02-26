@@ -1,9 +1,5 @@
 #!/usr/bin/python
 
-# overall TODO:
-# add file-modified-times to the history file, if FMTs
-# match, don't bother hashing the whole file
-
 import os
 import sys
 import argparse
@@ -65,7 +61,7 @@ def calc_working_tree():
                 files[ch.filename].mtime = ch.mtime
                 files[ch.filename].object = ch.object
             if ch.type == "delete":
-                files[ch.filename] = File(ch.filename, "000000", "0" * 40)
+                files[ch.filename] = File(ch.filename, "000000", "0", "0" * 40)
     return files
 
 
