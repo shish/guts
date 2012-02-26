@@ -199,12 +199,6 @@ def history_size():
     os.system("du -cb ./.gut/ | grep total | cut -f 1")
 
 
-# TODO list local mods (A, M, ? in git status terms)
-# is this used?
-def unsynced_file_paths():
-    pass
-
-
 def current_revision():
     print hashlib.sha1(file(".gut/history").read()).hexdigest()
 
@@ -376,17 +370,25 @@ def sync_down():
         return 1
 
 
-def configure(argv):
-    target_folder = argv[0]
-    remote_url = argv[1][len("--url="):]
-    author = argv[2][len("--user="):]
+def configure(target_folder, user, url):
+    if not target_folder:
+        if os.path.exists("./.gut"):
+            target_folder = "./"
+        else:
+            print "target_folder not specified"
+            return 1
 
     if not os.path.exists(target_folder+"/.gut"):
         os.makedirs(target_folder+"/.gut")
 
-    file(target_folder + "/.gut/history", "w").write("")
-    file(target_folder + "/.gut/remote_url", "w").write(remote_url+"\n")
-    file(target_folder + "/.gut/local_user", "w").write(author+"\n")
+    if not os.path.exists(target_folder + "/.gut/history"):
+        file(target_folder + "/.gut/history", "w").write("")
+
+    if url:
+        file(target_folder + "/.gut/remote_url", "w").write(url+"\n")
+
+    if user:
+        file(target_folder + "/.gut/local_user", "w").write(user+"\n")
 
 
 def fetch():
@@ -396,15 +398,13 @@ def fetch():
 
 
 # TODO: limit to last $n
-def get_change_sets(argv):
-    #count = argv[0]
-
+def get_change_sets(count):
     for commit in read_history(".gut/history"):
         print commit.to_gut()
 
 
-def init(argv):
-    target = argv[0]
+def init(target_folder):
+    target = target_folder
     if not os.path.exists(target):
         os.makedirs(target)
     file(target + "/repo_id", "w").write(random_hash())
@@ -416,24 +416,55 @@ def init(argv):
 
 
 def main(argv):
-    if len(argv) == 0:
-        print "Usage: guts [command]"
-        return 1
+    parser = argparse.ArgumentParser(description='A file sync tool')
+    subparsers = parser.add_subparsers(help='sub-command help')
 
-    if argv[0] == "init": return init(argv[1:])
-    if argv[0] == "configure": return configure(argv[1:])
-    if argv[0] == "fetch": return fetch()
-    if argv[0] == "identifier": return identifier()
-    if argv[0] == "size": return size()
-    if argv[0] == "history-size": return history_size()
-    if argv[0] == "current-revision": return current_revision()
-    if argv[0] == "has-remote-changes": return has_remote_changes()
-    if argv[0] == "has-local-changes": return has_local_changes()
-    if argv[0] == "sync-up": return sync_up()
-    if argv[0] == "sync-down": return sync_down()
-    if argv[0] == "get-change-sets": return get_change_sets(argv[1:])
-    if argv[0] == "unsynced-file-paths": return unsynced_file_paths()
+    parser_init = subparsers.add_parser('init', help='create a blank server-side repository')
+    parser_init.add_argument("target_folder")
+    parser_init.set_defaults(func=init)
 
+    parser_configure = subparsers.add_parser('configure', help='configure a checkout')
+    parser_configure.add_argument("target_folder")
+    parser_configure.add_argument("--url")
+    parser_configure.add_argument("--user")
+    parser_configure.set_defaults(func=configure)
+
+    parser_fetch = subparsers.add_parser('fetch', help='initially fetch a remote repo')
+    parser_fetch.set_defaults(func=fetch)
+
+    parser_identifier = subparsers.add_parser('identifier', help='print the repository ID')
+    parser_identifier.set_defaults(func=identifier)
+
+    parser_size = subparsers.add_parser('size', help='print the size of the checkout')
+    parser_size.set_defaults(func=size)
+
+    parser_history_size = subparsers.add_parser('history-size', help='print the size of the metadata')
+    parser_history_size.set_defaults(func=history_size)
+
+    parser_current_revision = subparsers.add_parser('current-revision', help='print the current checkout revision ID')
+    parser_current_revision.set_defaults(func=current_revision)
+
+    parser_has_remote_changes = subparsers.add_parser('has-remote-changes', help='see if the repository has updates')
+    parser_has_remote_changes.set_defaults(func=has_remote_changes)
+
+    parser_has_local_changes = subparsers.add_parser('has-local-changes', help='see if the local files have been changed')
+    parser_has_local_changes.set_defaults(func=has_local_changes)
+
+    parser_sync_up = subparsers.add_parser('sync-up', help='push changes to the repository')
+    parser_sync_up.set_defaults(func=sync_up)
+
+    parser_sync_down = subparsers.add_parser('sync-down', help='pull changes from the repository')
+    parser_sync_down.set_defaults(func=sync_down)
+
+    parser_get_change_sets = subparsers.add_parser('get-change-sets', help='list recent changes')
+    parser_get_change_sets.add_argument("--count")
+    parser_get_change_sets.set_defaults(func=get_change_sets)
+
+    args = parser.parse_args()
+    if args.func:
+        func = args.func
+        del vars(args)['func']
+        return func(**vars(args))
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main(sys.argv))
