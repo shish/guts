@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import random
 import time
+from urlparse import urlparse
 
 
 def random_hash():
@@ -68,15 +69,13 @@ def calc_working_tree():
 
 
 def net_download(repo_url, repo_path, local_path):
-    repo_url = repo_url.replace("ssh://", "")
-    repo_url = repo_url.replace(".org", ".org:")
-    os.system('scp -q "%s/%s" "%s"' % (repo_url, repo_path, local_path))
+    up = urlparse(repo_url)
+    os.system('scp -q "%s:/%s" "%s"' % (up.hostname, up.path+"/"+repo_path, local_path))
 
 
 def net_upload(repo_url, local_path, repo_path):
-    repo_url = repo_url.replace("ssh://", "")
-    repo_url = repo_url.replace(".org", ".org:")
-    os.system('scp -q "%s" "%s/%s"' % (local_path, repo_url, repo_path))
+    up = urlparse(repo_url)
+    os.system('scp -q "%s" "%s:/%s"' % (local_path, up.hostname, up.path+"/"+repo_path))
 
 
 #######################################################################
