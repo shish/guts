@@ -229,7 +229,7 @@ def has_local_changes():
             (f.mode == "000000" and os.path.exists(f.filename)) or
             (f.mode != "000000" and not os.path.exists(f.filename)) or
             (f.mode != "000000" and f.object != hashlib.sha1(file(f.filename).read()).hexdigest()) or
-            (f.mode != "000000" and os.stat(f.filename)[0] != int(f.mode, 8))
+            (f.mode != "000000" and os.stat(f.filename).st_mode != int(f.mode, 8))
         ):
             print "true"
             return 0
@@ -267,7 +267,7 @@ def sync_up():
                 full_name = full_name[2:]
             actual_files[full_name] = File(
                 full_name,
-                "%o" % os.stat(full_name)[0],
+                "%o" % os.stat(full_name).st_mode,
                 hashlib.sha1(file(full_name).read()).hexdigest()
             )
 
@@ -359,7 +359,7 @@ def sync_down():
                     os.makedirs(filedir)
                 net_download(remote_url, "objects/%s/%s" % (wtfile.object[0:2], wtfile.object), wtfile.filename)
 
-            if os.stat(wtfile.filename)[0] != int(wtfile.mode, 8):
+            if os.stat(wtfile.filename).st_mode != int(wtfile.mode, 8):
                 os.chmod(wtfile.filename, int(wtfile.mode, 8))
 
     if not conflicts:
