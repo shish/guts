@@ -233,10 +233,10 @@ def has_local_changes():
             # it exists and should, but has been changed
             (f.mode != "000000" and (
                 (not os.path.exists(f.filename)) or
-                (os.stat(f.filename).st_mtime != int(f.mtime)) or
+                (int(os.stat(f.filename).st_mtime) != int(f.mtime)) or
                 (os.stat(f.filename).st_mode != int(f.mode, 8)) or
                 (hashlib.sha1(file(f.filename).read()).hexdigest() != f.object)
-            )
+            ))
         ):
             print "true"
             return 0
@@ -275,7 +275,7 @@ def sync_up():
             actual_files[full_name] = File(
                 full_name,
                 "%o" % os.stat(full_name).st_mode,
-                str(os.stat(full_name).st_mtime),
+                str(int(os.stat(full_name).st_mtime)),
                 hashlib.sha1(file(full_name).read()).hexdigest()
             )
 
