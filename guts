@@ -374,6 +374,9 @@ def sync_down():
             if os.stat(wtfile.filename).st_mode != int(wtfile.mode, 8):
                 os.chmod(wtfile.filename, int(wtfile.mode, 8))
 
+            if os.stat(wtfile.filename).st_mtime != int(wtfile.mtime):
+                os.utime(wtfile.filename, (int(wtfile.mtime), int(wtfile.mtime)))
+
     if not conflicts:
         print "true"
         return 0
