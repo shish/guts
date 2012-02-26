@@ -58,10 +58,11 @@ def calc_working_tree():
     for commit in read_history(".gut/history"):
         for ch in commit.changes:
             if ch.type == "add":
-                files[ch.filename] = File(ch.filename, ch.mode, ch.object)
+                files[ch.filename] = File(ch.filename, ch.mode, ch.mtime, ch.object)
             if ch.type == "modify":
                 files[ch.filename].old_objects.append(files[ch.filename].object)
                 files[ch.filename].mode = ch.mode
+                files[ch.filename].mtime = ch.mtime
                 files[ch.filename].object = ch.object
             if ch.type == "delete":
                 files[ch.filename] = File(ch.filename, "000000", "0" * 40)
@@ -131,7 +132,7 @@ class Change(object):
 class Add(Change):
     def __init__(self, line):
         self.line = line
-        self.type, self.filename, self.mode, self.object = line.split(":")
+        self.type, self.filename, self.mode, self.mtime, self.object = line.split(":")
 
     def to_git(self):
         return ":%s %s %s %s %s  %s" % (
@@ -147,7 +148,7 @@ class Add(Change):
 class Modify(Change):
     def __init__(self, line):
         self.line = line
-        self.type, self.filename, self.mode, self.object = line.split(":")
+        self.type, self.filename, self.mode, self.mtime, self.object = line.split(":")
 
     def to_git(self):
         return ":%s %s %s %s %s  %s" % (
@@ -177,9 +178,10 @@ class Delete(Change):
 
 
 class File(object):
-    def __init__(self, filename, mode, object):
+    def __init__(self, filename, mode, mtime, object):
         self.filename = filename
         self.mode = mode
+        self.mtime = mtime
         self.object = object
         self.old_objects = []
 
@@ -226,10 +228,15 @@ def has_local_changes():
         f = files[wtfilename]
 
         if (
+            # if exists when it shouldn't
             (f.mode == "000000" and os.path.exists(f.filename)) or
-            (f.mode != "000000" and not os.path.exists(f.filename)) or
-            (f.mode != "000000" and f.object != hashlib.sha1(file(f.filename).read()).hexdigest()) or
-            (f.mode != "000000" and os.stat(f.filename).st_mode != int(f.mode, 8))
+            # it exists and should, but has been changed
+            (f.mode != "000000" and (
+                (not os.path.exists(f.filename)) or
+                (os.stat(f.filename).st_mtime != int(f.mtime)) or
+                (os.stat(f.filename).st_mode != int(f.mode, 8)) or
+                (hashlib.sha1(file(f.filename).read()).hexdigest() != f.object)
+            )
         ):
             print "true"
             return 0
@@ -268,6 +275,7 @@ def sync_up():
             actual_files[full_name] = File(
                 full_name,
                 "%o" % os.stat(full_name).st_mode,
+                str(os.stat(full_name).st_mtime),
                 hashlib.sha1(file(full_name).read()).hexdigest()
             )
 
@@ -281,6 +289,7 @@ def sync_up():
                 "add",
                 f,
                 actual_files[f].mode,
+                actual_files[f].mtime,
                 actual_files[f].object,
             ])))
     for f in known_files:
@@ -294,6 +303,7 @@ def sync_up():
                     "modify",
                     f,
                     actual_files[f].mode,
+                    actual_files[f].mtime,
                     actual_files[f].object,
                 ])))
 
