@@ -29,7 +29,6 @@ def read_history(filename):
                 commits.append(commit)
             commit = Commit()
             commit.hash = v
-            commit.msg = "TODO"
             commit.changes = []
         if not commit:
             continue
@@ -86,10 +85,9 @@ def net_upload(repo_url, local_path, repo_path):
 
 class Commit(object):
     def __init__(self):
-        self.author = "auth <moo>"
-        self.date = "moo"
-        self.msg = "1234"
-        self.hash = "1234"
+        self.author = None
+        self.date = None
+        self.hash = None
         self.changes = []
 
     def to_git(self):
@@ -98,7 +96,7 @@ class Commit(object):
         s = s + "Author: %s\n" % self.author
         s = s + "Date:   %s\n" % self.date
         s = s + "\n"
-        s = s + "    %s\n" % self.msg
+        s = s + "    Automatic commit\n"
         s = s + "\n"
         for change in self.changes:
             s = s + change.to_git() + "\n"
