@@ -411,13 +411,12 @@ def fetch():
 
 
 def get_change_sets(count):
-    # TODO: implement this as a queue to save memory?
     # TODO: only read the end part of the file?
     commits = []
     for commit in read_history(".gut/history"):
         commits.append(commit)
-    if count > 0:
-        commits = commits[-count:]
+        if count > 0 and len(commits) > count:
+            commits.pop(0)
     for commit in commits:
         print commit.to_gut()
 
