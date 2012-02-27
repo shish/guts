@@ -357,7 +357,12 @@ def sync_down():
 
         if wtfile.mode == "000000":
             if os.path.exists(wtfile.filename):
-                os.unlink(wtfile.filename)
+                current_hash = hashlib.sha1(file(wtfile.filename).read()).hexdigest()
+                if current_hash not in wtfile.old_objects:
+                    conflicts = True
+                    os.rename(wtfile.filename, wtfile.filename + "." + str(time.time()))
+                else:
+                    os.unlink(wtfile.filename)
         else:
             current_hash = None
             if os.path.exists(wtfile.filename):
