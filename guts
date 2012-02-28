@@ -15,6 +15,15 @@ def random_hash():
     return hashlib.sha1(str(base)).hexdigest()
 
 
+def true_or_false(b):
+    if b:
+        print "true"
+        return 0
+    else:
+        print "false"
+        return 1
+
+
 def read_history(filename):
     lines = file(filename).readlines()
 
@@ -215,12 +224,7 @@ def has_remote_changes():
     local = hashlib.sha1(file(".gut/history").read()).hexdigest()
     remote = hashlib.sha1(file(".gut/tmp-remote-history").read()).hexdigest()
 
-    if local != remote:
-        print "true"
-        return 0
-    else:
-        print "false"
-        return 1
+    return true_or_false(local != remote)
 
 
 def has_local_changes():
@@ -332,12 +336,7 @@ def sync_up():
     net_upload(remote_url, ".gut/history", "history")
     # TODO: unlock repo
 
-    if True:
-        print "true"
-        return 0
-    else:
-        print "false"
-        return 1
+    return true_or_false(True)
 
 
 def sync_down():
@@ -383,12 +382,7 @@ def sync_down():
             if os.stat(wtfile.filename).st_mtime != int(wtfile.mtime):
                 os.utime(wtfile.filename, (int(wtfile.mtime), int(wtfile.mtime)))
 
-    if not conflicts:
-        print "true"
-        return 0
-    else:
-        print "false"
-        return 1
+    return true_or_false(not conflicts)
 
 
 def configure(target_folder, user, url):
