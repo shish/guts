@@ -23,17 +23,11 @@ Getting Started
 
     you@server:~/ $ guts init /home/you/your-repo.gut
 
-2) Connect with SparkleShare::
+2) (Optional) Check out the command line client on its own::
 
-    you@client:~/ $ sudo ln -s /home/you/src/guts/guts /usr/bin/gut
-    
-    Right click icon -> Add Hosted Project
-    Address: you@server
-    Remote Path: /home/you/your-repo.gut
-
-3) Check out the command line client on its own::
-
-    you@client:~/ $ guts configure local-folder --user="Your Name <you@example.com>" --url=ssh://you@server/home/you/your-repo.gut
+    you@client:~/ $ guts configure local-folder \
+            --user="Your Name <you@example.com>" \
+            --url=rsync+ssh://you@server/home/you/your-repo.gut
     you@client:~/ $ cd local-folder
     you@client:~/local-folder/ $ guts fetch
     [... the server is contacted, files are downloaded, things are set up ...]
@@ -43,3 +37,16 @@ Getting Started
     [... edit some files ...]
     you@client:~/local-folder/ $ guts sync-up
     [... your changes are uploaded ...]
+
+3) Build the SparkleShare backend::
+
+    you@client:~/guts/ $ make
+    you@client:~/guts/ $ sudo cp SparkleLib.Gut.dll /usr/lib/sparkleshare/
+    you@client:~/guts/ $ sudo cp guts /usr/bin/gut
+    you@client:~/guts/ $ sparkleshare restart
+
+4) Connect with SparkleShare::
+
+    Right click icon -> Add Hosted Project
+    Address: you@server
+    Remote Path: /home/you/your-repo.gut
